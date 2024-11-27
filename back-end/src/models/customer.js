@@ -15,10 +15,10 @@ const minBirthDate = new Date()
 minBirthDate.setFullYear(minBirthDate.getFullYear() - 120)
 
 const Customer = z.object({
-  name:
-    z.string()
-    .min(5, { message: 'O nome deve ter, no mínimo, 5 caracteres' })
-    .includes(' ', { message: 'O nome deve ter um espaço em branco separando nome e sobrenome' }),
+  //name:
+    //z.string()
+    //.min(5, { message: 'O nome deve ter, no mínimo, 5 caracteres' })
+    //.includes(' ', { message: 'O nome deve ter um espaço em branco separando nome e sobrenome' }),
 
   ident_document:
     z.string()
@@ -56,24 +56,24 @@ const Customer = z.object({
     z.string()
     .max(40, { message: 'O município pode ter, no máximo, 40 caracteres' }),
 
-  state:
-    z.string()
-    .length(2, { message: 'UF deve ter, exatamente, 2 caracteres' }),
+  //state:
+    //z.string()
+    //.length(2, { message: 'UF deve ter, exatamente, 2 caracteres' }),
 
-  phone:
-    z.string()
-    .transform(val => val.replace('_', ''))
+ // phone:
+    //z.string()
+    //.transform(val => val.replace('_', ''))
     // Depois de um transform(), não podemos usar length(). Por isso, devemos
     // usar uma função personalizada com refine() para validar o tamanho do
     // campo
-    .refine(val => {
-      console.log('val.length', val.length, 'val', val)
-      return val.length === 15
-}   , { message: 'O número do telefone/celular deve ter 15 posições' }),
+    //.refine(val => {
+      //console.log('val.length', val.length, 'val', val)
+      //return val.length === 15
+//}   //, { message: 'O número do telefone/celular deve ter 15 posições' }),
 
-  email:
-    z.string()
-    .email({ message: 'E-mail inválido' })
+  //email:
+   // z.string()
+    //.email({ message: 'E-mail inválido' })
 
 })
 
