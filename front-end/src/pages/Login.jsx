@@ -1,164 +1,61 @@
 import React from 'react'
-import {
-  Typography,
-  Paper,
-  TextField,
-  InputAdornment,
-  Button,
-  IconButton
-} from '@mui/material'
-import {
-  Visibility,
-  VisibilityOff
-} from '@mui/icons-material'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import myfetch from '../lib/myfetch'
-import useNotification from '../ui/useNotification'
-import useWaiting from '../ui/useWaiting'
-import { useNavigate } from 'react-router-dom'
 import AuthUserContext from '../contexts/AuthUserContext'
+import useWaiting from '../ui/useWaiting'
+import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
 
-export default function Login() {
+export default function AuthGuard({ children, adminOnly = false }) {
 
-  const [state, setState] = React.useState({
-    email: '',
-    password: '',
-    showPassword: false
-  })
-  const {
-    email,
-    password,
-    showPassword
-  } = state
+  const { setAuthUser, authUser, setRedirectLocation } = React.useContext(AuthUserContext)
+  const [status, setStatus] = React.useState('IDLE')
 
-  const { 
-    setAuthUser, 
-    redirectLocation, 
-    setRedirectLocation 
-  } = React.useContext(AuthUserContext)
-
-  const { notify, Notification} = useNotification()
+  const location = useLocation()
   const { showWaiting, Waiting } = useWaiting()
-
   const navigate = useNavigate()
 
-  function handleChange(event) {
-    // Atualiza a variável de estado associada ao
-    // input que foi modificado
-    setState({ ...state, [event.target.name]: event.target.value })
-  }
-
-  function handleClick(event) {
-    // Alterna a visibilidade da senha
-    setState({ ...state, showPassword: !showPassword })
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault()      // Evita o recarregamento da página
+  async function checkAuthUser() {
+    if(setStatus) setStatus('PROCESSING')
     showWaiting(true)
     try {
-
-      const loginData = { password }
-
-      if(email.includes('@')) loginData.email = email
-      // Se o valor da variável email não contiver @, será tratado
-      // como um username
-      else loginData.username = email
-
-      // console.log({ loginData })
-
-      // Envia email e password para o back-end para fazer autenticação
-      const response = await myfetch.post('/users/login', loginData)
-
-      // Armazena o token retornado no localStorage (INSEGURO!)
-      // window.localStorage.setItem(
-      //     import.meta.env.VITE_AUTH_TOKEN_NAME,
-      //     response.token
-      // )
-
-      // Armazena as informações do usuário autenticado
-      setAuthUser(response.user)
-
-      // Mostra a notificação de sucesso e depois vai para a página inicial
-      notify('Autenticação realizada com sucesso', 'success', 1500, () => {
-        // Verifica se existe algum destino para redirecionamento
-        if(redirectLocation) {
-          const dest = redirectLocation
-          setRedirectLocation(null)   // Reseta o destino de redirecionamento
-          navigate(dest, { replace: true })
-        }
-        else navigate('/', { replace: true })
-      })
+      const authUser = await myfetch.get('/users/me')
+      setAuthUser(authUser)
     }
     catch(error) {
+      setAuthUser(null)
       console.error(error)
-      notify(error.message, 'error')
+      navigate('/login', { replace: true })
     }
     finally {
       showWaiting(false)
+      setStatus('DONE')
     }
   }
 
-  return(
-    <>
-      <Notification />
-      <Waiting />
+  React.useEffect(() => {
+    // Salva a rota atual para posterior redirecionamento,
+    // caso a rota atual não seja o próprio login
+    if(! location.pathname.includes('login')) setRedirectLocation(location)
 
-      <Typography variant="h1" gutterBottom>
-        Autentique-se
-      </Typography>
+    checkAuthUser()
+  }, [location])
 
-      <Paper
-        elevation={6}
-        sx={{
-          padding: '24px',
-          maxWidth: '500px',
-          margin: 'auto'
-        }}
-      >
-        <form onSubmit={handleSubmit}>
-          <TextField
-            name="email"
-            value={email}
-            label="Nome de usuário ou e-mail"
-            variant="filled"
-            fullWidth
-            onChange={handleChange}
-            sx={{ mb: '24px' /* mb = marginBottom */ }}
-          />
+  // Enquanto ainda não temos a resposta do back-end para /users/me,
+  // exibimos um componente Waiting
+  if(status === 'PROCESSING') return <Waiting />
 
-          <TextField
-            name="password"
-            value={password}
-            label="Senha"
-            variant="filled"
-            type={ showPassword ? 'text': 'password' }
-            fullWidth
-            onChange={handleChange}
-            sx={{ mb: '24px' /* mb = marginBottom */ }}
-            InputProps={{
-              endAdornment:
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="alterna a visibilidade da senha"
-                    onClick={handleClick}
-                    edge="end"
-                  >
-                    { showPassword ? <VisibilityOff /> : <Visibility /> }
-                  </IconButton>
-                </InputAdornment>
-            }}
-          />
-
-          <Button
-            variant="contained"
-            type="submit"
-            color="secondary"
-            fullWidth
-          >
-            Enviar
-          </Button>
-        </form>
-      </Paper>
-    </>
-  )
+  if(authUser) {
+    if(adminOnly && authUser.is_admin) return children
+    else if (adminOnly && !(authUser.is_admin)) return (
+      <Box>
+        <Typography variant="h2" color="error">
+          Acesso negado
+        </Typography>
+      </Box>
+    )
+    else return children
+  }
+  else return <Navigate to="/login" replace />
+  
 }

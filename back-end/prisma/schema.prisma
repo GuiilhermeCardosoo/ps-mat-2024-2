@@ -66,4 +66,3 @@ model User {
   updated_cars      Car[]         @relation("updated_user")
 }
 
-
