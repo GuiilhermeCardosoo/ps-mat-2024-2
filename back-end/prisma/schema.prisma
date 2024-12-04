@@ -66,3 +66,12 @@ model User {
   updated_cars      Car[]         @relation("updated_user")
 }
 
+model Seller {
+  id                  Int         @id @default(autoincrement())
+  fullname            String      //Nome completo
+  birth_date          DateTime    // Data de nascimento
+  identity_document   String      @unique // CPF
+  email               String      @unique // Email
+  phone               String      // Celular
+  is_manager          Boolean     @default(false) // É gerente?
+}

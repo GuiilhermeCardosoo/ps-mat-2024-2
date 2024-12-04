@@ -5,7 +5,7 @@ const minSellingDate = new Date(1960, 0, 1); // Define a data mínima para 1 de 
 const maxYearManufacture = new Date()
 maxYearManufacture.setFullYear(maxYearManufacture.getFullYear())
 
-export default z.object({
+const Car = z.object({
   brand: z
     .string()
     .max(25, { message: 'O marca deve ter, no máximo, 25 caracteres' }),
@@ -20,11 +20,11 @@ export default z.object({
 
   year_manufacture: z.coerce
     .number()
-    .min(minSellingDate, {
+    .min(minSellingDate.getFullYear(), {
       message: 'O ano de fabricação deve ser maior que 1960',
     })
-    .max(maxYearManufacture, {
-      message: 'O ano de fabricação deve ser menor que ' + maxYearManufacture,
+    .max(new Date().getFullYear(), {
+      message: 'O ano de fabricação deve ser menor que ' + maxYearManufacture.getFullYear(),
     }),
 
   imported: z.boolean(),
@@ -33,19 +33,27 @@ export default z.object({
     .string()
     .max(8, { message: 'A Placa pode ter, no máximo, 8 caracteres' }),
 
-  selling_date:
-    // coerce força a conversão para o tipo Date, se o valor recebido for string
-    z.coerce
-      .date()
-      .min(minSellingDate, { message: 'Data de venda está muito no passado' })
-      .max(maxSellingDate, {
-        message: 'Data de venda não deve ser maior que data atual',
-      })
-      .nullable(),
+  selling_date: z
+    .union([ //  z.union para conseguir colocar diferentes dados
+      z.coerce
+        .date()
+        .min(minSellingDate, { message: 'Data de venda está muito no passado' })
+        .max(maxSellingDate, {
+          message: 'Data de venda não deve ser maior que data atual',
+        }),
+      z.null(), //  nullable não estava funcionando para campos opcionais, foi substituido para z.null para o funcionamento correto
+      z.undefined()
+    ]),
 
-  selling_price: z.coerce
-    .number()
-    .gte(1000, { message: 'O valor deve ser maior que R$ 1.000' })
-    .lte(5000000, { message: 'O valor deve ser menor que R$ 5.000.000' })
-    .nullable(),
-});
+  selling_price: z
+    .union([ //  z.union para conseguir colocar diferentes dados
+      z.coerce
+        .number()
+        .gte(1000, { message: 'O valor deve ser maior que R$ 1.000' })
+        .lte(5000000, { message: 'O valor deve ser menor que R$ 5.000.000' }),
+      z.null(), //  nullable não estava funcionando para campos opcionais, foi substituido para z.null para o funcionamento correto
+      z.undefined()
+    ])
+})
+
+export default Car
